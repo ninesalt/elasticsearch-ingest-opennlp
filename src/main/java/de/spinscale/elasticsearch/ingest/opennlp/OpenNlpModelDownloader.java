@@ -36,26 +36,36 @@ public class OpenNlpModelDownloader extends EnvironmentAwareCommand {
     }
 
     public OpenNlpModelDownloader() {
-        super("Downloads three sample models for named entity recognition for dates, locations and persons");
+        super("Downloads openNLP models");
     }
 
     @Override
     protected void execute(Terminal terminal, OptionSet options, Environment env) throws Exception {
         Path configDirectoryPath = env.configFile().resolve(IngestOpenNlpPlugin.NAME).normalize().toAbsolutePath();
-        if (Files.exists(configDirectoryPath) == false) {
+        if (!Files.exists(configDirectoryPath)) {
             Files.createDirectories(configDirectoryPath);
         }
 
         String baseUrl = "http://opennlp.sourceforge.net/models-1.5/";
-        download(baseUrl + "en-ner-person.bin", configDirectoryPath.resolve("en-ner-persons.bin"), terminal);
-        download(baseUrl + "en-ner-location.bin", configDirectoryPath.resolve("en-ner-locations.bin"), terminal);
-        download(baseUrl + "en-ner-date.bin", configDirectoryPath.resolve("en-ner-dates.bin"), terminal);
+        //NER
+        download(baseUrl + "en-ner-person.bin", configDirectoryPath.resolve("en-ner-person.bin"), terminal);
+        download(baseUrl + "en-ner-location.bin", configDirectoryPath.resolve("en-ner-location.bin"), terminal);
+        download(baseUrl + "en-ner-organization.bin", configDirectoryPath.resolve("en-ner-organization.bin"), terminal);
+        download(baseUrl + "en-ner-date.bin", configDirectoryPath.resolve("en-ner-date.bin"), terminal);
+
+        //POS
+        download(baseUrl + "en-pos-maxent.bin", configDirectoryPath.resolve("en-pos-maxent.bin"), terminal);
 
         terminal.println("\nyou can use the following configuration settings now\n");
 
-        terminal.println("ingest.opennlp.model.file.persons: en-ner-persons.bin");
-        terminal.println("ingest.opennlp.model.file.dates: en-ner-dates.bin");
-        terminal.println("ingest.opennlp.model.file.locations: en-ner-locations.bin");
+        // NER
+        terminal.println("ingest.opennlp.model.file.persons: en-ner-person.bin");
+        terminal.println("ingest.opennlp.model.file.dates: en-ner-date.bin");
+        terminal.println("ingest.opennlp.model.file.locations: en-ner-location.bin");
+        terminal.println("ingest.opennlp.model.file.organizations: en-ner-organization.bin");
+
+        // POS
+        terminal.println("ingest.opennlp.model.file.pos: en-pos-maxent.bin");
     }
 
     @SuppressForbidden(reason = "we have to download the models, so we have to open a socket")

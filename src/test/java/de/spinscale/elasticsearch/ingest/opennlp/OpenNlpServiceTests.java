@@ -43,15 +43,15 @@ public class OpenNlpServiceTests extends ESTestCase {
         OpenNlpService service = new OpenNlpService(getDataPath("/models/en-ner-persons.bin").getParent(), settings);
         service.start();
 
-        Set<String> names = service.find("Kobe Bryant was one of the best basketball players of all time.", "names");
+        Set<String> names = service.findEntities("Kobe Bryant was one of the best basketball players of all time.", "names");
         assertThat(names, hasSize(1));
         assertThat(names, hasItem("Kobe Bryant"));
 
-        Set<String> locations = service.find("Munich is really an awesome city, but New York is as well.", "locations");
+        Set<String> locations = service.findEntities("Munich is really an awesome city, but New York is as well.", "locations");
         assertThat(locations, hasSize(2));
         assertThat(locations, contains("Munich", "New York"));
 
-        Set<String> dates = service.find("Yesterday has been the hottest day of the year.", "dates");
+        Set<String> dates = service.findEntities("Yesterday has been the hottest day of the year.", "dates");
         assertThat(dates, hasSize(1));
         assertThat(dates, contains("Yesterday"));
     }

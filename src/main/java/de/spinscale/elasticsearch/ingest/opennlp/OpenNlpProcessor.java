@@ -21,7 +21,6 @@ import org.elasticsearch.common.Strings;
 import org.elasticsearch.ingest.AbstractProcessor;
 import org.elasticsearch.ingest.IngestDocument;
 import org.elasticsearch.ingest.Processor;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,7 +41,8 @@ public class OpenNlpProcessor extends AbstractProcessor {
     private final String targetField;
     private final Set<String> fields;
 
-    OpenNlpProcessor(OpenNlpService openNlpService, String tag, String sourceField, String targetField, Set<String> fields) {
+    OpenNlpProcessor(OpenNlpService openNlpService, String tag,
+                     String sourceField, String targetField, Set<String> fields) {
         super(tag);
         this.openNlpService = openNlpService;
         this.sourceField = sourceField;
@@ -52,20 +52,34 @@ public class OpenNlpProcessor extends AbstractProcessor {
 
     @Override
     public IngestDocument execute(IngestDocument ingestDocument) {
+
         String content = ingestDocument.getFieldValue(sourceField, String.class);
 
         if (Strings.hasLength(content)) {
+
             Map<String, Set<String>> entities = new HashMap<>();
             mergeExisting(entities, ingestDocument, targetField);
 
             for (String field : fields) {
-                Set<String> data = openNlpService.find(content, field);
-                merge(entities, field, data);
+
+                // NER
+                if(!field.equals("pos")){
+                    Set<String> data = openNlpService.findEntities(content, field);
+                    merge(entities, field, data);
+                }
+
+                // POS
+                else{
+                    Map<String, Map<String, Integer>> data = openNlpService.tagPOS(content);
+                    ingestDocument.setFieldValue("pos", data);
+                }
+
             }
 
             // convert set to list, otherwise toXContent serialization in simulate pipeline fails
             Map<String, List<String>> entitiesToStore = new HashMap<>();
             Iterator<Map.Entry<String, Set<String>>> iterator = entities.entrySet().iterator();
+
             while (iterator.hasNext()) {
                 Map.Entry<String, Set<String>> entry = iterator.next();
                 entitiesToStore.put(entry.getKey(), new ArrayList<>(entry.getValue()));
@@ -100,7 +114,8 @@ public class OpenNlpProcessor extends AbstractProcessor {
         }
     }
 
-    private static void mergeExisting(Map<String, Set<String>> entities, IngestDocument ingestDocument, String targetField) {
+    private static void mergeExisting(Map<String, Set<String>> entities,
+                                      IngestDocument ingestDocument, String targetField) {
         if (ingestDocument.hasField(targetField)) {
             @SuppressWarnings("unchecked")
             Map<String, Set<String>> existing = ingestDocument.getFieldValue(targetField, Map.class);

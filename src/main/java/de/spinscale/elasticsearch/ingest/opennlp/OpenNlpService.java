@@ -17,6 +17,9 @@
 
 package de.spinscale.elasticsearch.ingest.opennlp;
 
+
+import opennlp.tools.postag.POSModel;
+import opennlp.tools.postag.POSTaggerME;
 import opennlp.tools.namefind.NameFinderME;
 import opennlp.tools.namefind.TokenNameFinderModel;
 import opennlp.tools.tokenize.SimpleTokenizer;
@@ -35,6 +38,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -49,6 +53,7 @@ public class OpenNlpService {
 
     private ThreadLocal<TokenNameFinderModel> threadLocal = new ThreadLocal<>();
     private Map<String, TokenNameFinderModel> nameFinderModels = new ConcurrentHashMap<>();
+    private POSModel posModel;
 
     OpenNlpService(Path configDirectory, Settings settings) {
         this.configDirectory = configDirectory;
@@ -60,16 +65,32 @@ public class OpenNlpService {
     }
 
     protected OpenNlpService start() {
+
         StopWatch sw = new StopWatch("models-loading");
         Map<String, String> settingsMap = IngestOpenNlpPlugin.MODEL_FILE_SETTINGS.getAsMap(settings);
+
         for (Map.Entry<String, String> entry : settingsMap.entrySet()) {
+
             String name = entry.getKey();
             sw.start(name);
+
             Path path = configDirectory.resolve(entry.getValue());
+            String filename = path.getFileName().toString();
+
+
             try (InputStream is = Files.newInputStream(path)) {
-                nameFinderModels.put(name, new TokenNameFinderModel(is));
+
+                if(filename.contains("ner")){
+                    nameFinderModels.put(name, new TokenNameFinderModel(is));
+                }
+
+                if(filename.contains("pos")){
+                    posModel = new POSModel(is);
+                }
+
             } catch (IOException e) {
-                logger.error((Supplier<?>) () -> new ParameterizedMessage("Could not load model [{}] with path [{}]", name, path), e);
+                logger.error((Supplier<?>) () -> new ParameterizedMessage(
+                        "Could not load model [{}] with path [{}]", name, path), e);
             }
             sw.stop();
         }
@@ -83,12 +104,12 @@ public class OpenNlpService {
         return this;
     }
 
-    public Set<String> find(String content, String field) {
+    public Set<String> findEntities(String content, String field) {
+
         try {
-            if (!nameFinderModels.containsKey(field)) {
-                throw new ElasticsearchException("Could not find field [{}], possible values {}", field, nameFinderModels.keySet());
-            }
-            TokenNameFinderModel finderModel= nameFinderModels.get(field);
+
+            TokenNameFinderModel finderModel = nameFinderModels.get(field);
+
             if (threadLocal.get() == null || !threadLocal.get().equals(finderModel)) {
                 threadLocal.set(finderModel);
             }
@@ -97,8 +118,50 @@ public class OpenNlpService {
             Span spans[] = new NameFinderME(finderModel).find(tokens);
             String[] names = Span.spansToStrings(spans, tokens);
             return Sets.newHashSet(names);
+
         } finally {
             threadLocal.remove();
         }
+    }
+
+    public Map<String, Map<String, Integer>> tagPOS(String content){
+
+        try{
+
+           if(posModel == null){
+               throw new ElasticsearchException("Cannot tag POS because " +
+                       "POS model is missing");
+           }
+
+           POSTaggerME tagger = new POSTaggerME(posModel);
+           Map <String, Map<String, Integer>> m = new HashMap<>();
+
+            // Avoided the whitespace tokenizer here because it
+            // tokenizes words with the punctuation in them
+            // ie: My name is Alex.
+            // will have (Alex.) as a token
+           String[] tokens = SimpleTokenizer.INSTANCE.tokenize(content);
+           String[] tags = tagger.tag(tokens);
+
+           for(int i = 0; i < tags.length; i++){
+
+               String tag = tags[i].trim();
+               String word = tokens[i].trim();
+
+               if(word.replaceAll("\\p{P}", "").length() <= 1) continue;
+
+               m.putIfAbsent(tag, new HashMap<>());
+               m.get(tag).putIfAbsent(word, 0);
+               Integer oldValue = m.get(tag).get(word);
+               m.get(tag).put(word, oldValue + 1);
+           }
+       return m;
+
+       }
+       catch(Exception e){
+            logger.error(e.getMessage());
+       }
+
+        return null;
     }
 }

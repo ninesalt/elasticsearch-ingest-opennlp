@@ -1,33 +1,15 @@
 # Elasticsearch OpenNLP Ingest Processor
 
-I wrote a [opennlp mapping plugin](https://github.com/spinscale/elasticsearch-opennlp-plugin) a couple of years ago and people asked me, why I did not update it. The main reason was, that it was a bad architectural choice as mentioned in the [openlp plugin README](https://github.com/spinscale/elasticsearch-opennlp-plugin#elasticsearch-opennlp-plugin). With the introduction of ingest processors in Elasticsearch 5.0 this problem has been resolved.
+This repo is forked from spinscales [repo](https://github.com/spinscale/elasticsearch-ingest-opennlp). I added support for POS tagging. It tags all the words in the field and counts how many times they occur. 
 
-This processor is doing named/date/location/'whatever you have a model for' entity recognition and stores the output in the JSON before it is being stored.
+The ES ingest processor is doing named/date/location/'whatever you have a model for' entity recognition and stores the output in the JSON before it is being stored.
 
 This plugin is also intended to show you, that using gradle as a build system makes it very easy to reuse the testing facilities that elasticsearch already provides. First, you can run regular tests, but by adding a rest test, the plugin will be packaged and unzipped against elasticsearch, allowing you to execute a real end-to-end test, by just adding a java test class.
 
 ## Installation
+You can install the plugin for ES v6.5.4 using this command:
 
-| ES    | Command |
-| ----- | ------- |
-| 6.5.4 | `bin/elasticsearch-plugin install https://github.com/spinscale/elasticsearch-ingest-opennlp/releases/download/6.5.4.1/ingest-opennlp-6.5.4.1.zip` |
-| 6.5.3 | `bin/elasticsearch-plugin install https://github.com/spinscale/elasticsearch-ingest-opennlp/releases/download/6.5.3.1/ingest-opennlp-6.5.3.1.zip` |
-| 6.5.2 | `bin/elasticsearch-plugin install https://github.com/spinscale/elasticsearch-ingest-opennlp/releases/download/6.5.2.1/ingest-opennlp-6.5.2.1.zip` |
-| 6.5.1 | `bin/elasticsearch-plugin install https://github.com/spinscale/elasticsearch-ingest-opennlp/releases/download/6.5.1.1/ingest-opennlp-6.5.1.1.zip` |
-| 6.5.0 | `bin/elasticsearch-plugin install https://github.com/spinscale/elasticsearch-ingest-opennlp/releases/download/6.5.0.1/ingest-opennlp-6.5.0.1.zip` |
-| 6.4.3 | `bin/elasticsearch-plugin install https://github.com/spinscale/elasticsearch-ingest-opennlp/releases/download/6.4.3.1/ingest-opennlp-6.4.3.1.zip` |
-| 6.4.2 | `bin/elasticsearch-plugin install https://github.com/spinscale/elasticsearch-ingest-opennlp/releases/download/6.4.2.1/ingest-opennlp-6.4.2.1.zip` |
-| 6.4.1 | `bin/elasticsearch-plugin install https://github.com/spinscale/elasticsearch-ingest-opennlp/releases/download/6.4.1.1/ingest-opennlp-6.4.1.1.zip` |
-| 6.4.0 | `bin/elasticsearch-plugin install https://github.com/spinscale/elasticsearch-ingest-opennlp/releases/download/6.4.0.1/ingest-opennlp-6.4.0.1.zip` |
-| 6.3.2 | `bin/elasticsearch-plugin install https://github.com/spinscale/elasticsearch-ingest-opennlp/releases/download/6.3.2.1/ingest-opennlp-6.3.2.1.zip` |
-| 6.3.1 | `bin/elasticsearch-plugin install https://github.com/spinscale/elasticsearch-ingest-opennlp/releases/download/6.3.1.1/ingest-opennlp-6.3.1.1.zip` |
-| 6.3.0 | `bin/elasticsearch-plugin install https://github.com/spinscale/elasticsearch-ingest-opennlp/releases/download/6.3.0.1/ingest-opennlp-6.3.0.1.zip` |
-| 6.2.4 | `bin/elasticsearch-plugin install https://github.com/spinscale/elasticsearch-ingest-opennlp/releases/download/6.2.4.1/ingest-opennlp-6.2.4.1.zip` |
-| 6.2.3 | `bin/elasticsearch-plugin install https://github.com/spinscale/elasticsearch-ingest-opennlp/releases/download/6.2.3.1/ingest-opennlp-6.2.3.1.zip` |
-| 6.2.2 | `bin/elasticsearch-plugin install https://github.com/spinscale/elasticsearch-ingest-opennlp/releases/download/6.2.2.1/ingest-opennlp-6.2.2.1.zip` |
-| 5.2.0 | `bin/elasticsearch-plugin install https://oss.sonatype.org/content/repositories/releases/de/spinscale/elasticsearch/plugin/ingest/ingest-opennlp/5.2.0.1/ingest-opennlp-5.2.0.1.zip` |
-| 5.1.2 | `bin/elasticsearch-plugin install https://oss.sonatype.org/content/repositories/releases/de/spinscale/elasticsearch/plugin/ingest/ingest-opennlp/5.1.2.1/ingest-opennlp-5.1.2.1.zip` |
-| 5.1.1 | `bin/elasticsearch-plugin install https://oss.sonatype.org/content/repositories/releases/de/spinscale/elasticsearch/plugin/ingest/ingest-opennlp/5.1.1.1/ingest-opennlp-5.1.1.1.zip` |
+`bin/elasticsearch-plugin install https://github.com/ninesalt/elasticsearch-ingest-opennlp/releases/download/6.5.4.1/ingest-opennlp-wpos-6.5.4.1.zip`
 
 **IMPORTANT**: If you are running this plugin with Elasticsearch 6.5.2 or newer, you need to download the NER models from sourceforge after installation.
 
@@ -51,9 +33,9 @@ This is how you configure a pipeline with support for opennlp
 You can add the following lines to the `config/elasticsearch.yml` (as those models are shipped by default, they are easy to enable). The models are looked up in the `config/ingest-opennlp/` directory.
 
 ```
-ingest.opennlp.model.file.persons: en-ner-persons.bin
-ingest.opennlp.model.file.dates: en-ner-dates.bin
-ingest.opennlp.model.file.locations: en-ner-locations.bin
+ingest.opennlp.model.file.persons: en-ner-person.bin
+ingest.opennlp.model.file.dates: en-ner-date.bin
+ingest.opennlp.model.file.locations: en-ner-location.bin
 ```
 
 Now fire up Elasticsearch and configure a pipeline
@@ -83,7 +65,73 @@ GET /my-index/my-type/1
     "locations" : [ "Munich", "New York" ],
     "dates" : [ "Yesterday" ],
     "names" : [ "Kobe Bryant", "Michael Jordan" ]
-  }
+  },
+  "pos": {
+      "NN": {
+          "basketball": 1,
+          "game": 1,
+          "city": 1,
+          "year": 1,
+          "Yesterday": 1,
+          "day": 1
+      },
+      "JJ": {
+          "awesome": 1
+      },
+      "CC": {
+          "but": 1
+      },
+      "CD": {
+          "81": 1,
+          "one": 2
+      },
+      "VBN": {
+          "been": 1,
+          "scored": 1
+      },
+      "IN": {
+          "in": 1,
+          "of": 3
+      },
+      "VBZ": {
+          "is": 2,
+          "has": 2
+      },
+      "DT": {
+          "the": 3,
+          "all": 1,
+          "an": 1
+      },
+      "RB": {
+          "ever": 1,
+          "Not": 1,
+          "as": 1,
+          "even": 1,
+          "well": 1,
+          "really": 1
+      },
+      "NNP": {
+          "Bryant": 1,
+          "Munich": 1,
+          "New": 1,
+          "Kobe": 1,
+          "York": 1,
+          "Michael": 1,
+          "Jordan": 1
+      },
+      "JJS": {
+          "hottest": 1,
+          "best": 1
+      },
+      "NNS": {
+          "times": 1,
+          "players": 1,
+          "points": 1
+      },
+      "VBD": {
+          "was": 1
+      }
+  },
 }
 ```
 
@@ -111,10 +159,13 @@ You can configure own models per field, the setting for this is prefixed `ingest
 
 | Parameter | Use |
 | --- | --- |
-| ingest.opennlp.model.file.name     | Configure the file for named entity recognition for the field name        |
-| ingest.opennlp.model.file.date     | Configure the file for date entity recognition for the field date         |
-| ingest.opennlp.model.file.person   | Configure the file for person entity recognition for the field person     |
+| ingest.opennlp.model.file.names     | Configure the file for named entity recognition for the field name        |
+| ingest.opennlp.model.file.dates     | Configure the file for date entity recognition for the field date         |
+| ingest.opennlp.model.file.persons   | Configure the file for person entity recognition for the field person     |
 | ingest.opennlp.model.file.WHATEVER | Configure the file for WHATEVER entity recognition for the field WHATEVER |
+
+* Note: it doesn't matter what the field name is as long the filename is the same as the one downloaded by the plugin or added manually by you. 
+For the sake of simplicity the convention here is plural for the fieldname and single for the filename (similar to the example in the Usage section).
 
 ## Development setup & running tests
 

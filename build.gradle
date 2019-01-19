@@ -41,7 +41,7 @@ esplugin {
   // copyright notices, may be different than the above notice
   noticeFile rootProject.file('NOTICE.txt')
   name 'ingest-opennlp'
-  description 'Ingest processor that uses OpenNLP for named entity extraction'
+  description 'Ingest processor that uses OpenNLP for NER and POS tagging'
   classname 'de.spinscale.elasticsearch.ingest.opennlp.IngestOpenNlpPlugin'
 }
 

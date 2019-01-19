@@ -91,7 +91,7 @@ public class OpenNlpThreadSafeTests extends ESTestCase {
         @Override
         public void run() {
             try {
-                Set<String> locations = service.find(city + " is really an awesome city, but others are as well.", "locations");
+                Set<String> locations = service.findEntities(city + " is really an awesome city, but others are as well.", "locations");
                 // logger.info("Got {}, expected {}, index {}", locations, city, idx);
                 if (locations.size() > 0) {
                     result = locations.stream().findFirst().get();
