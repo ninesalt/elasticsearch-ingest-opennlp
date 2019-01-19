@@ -9,11 +9,11 @@ This plugin is also intended to show you, that using gradle as a build system ma
 ## Installation
 You can install the plugin for ES v6.5.4 using this command:
 
-`bin/elasticsearch-plugin install https://github.com/ninesalt/elasticsearch-ingest-opennlp/releases/download/6.5.4.1/ingest-opennlp-wpos-6.5.4.1.zip`
+`bin/elasticsearch-plugin install https://github.com/ninesalt/elasticsearch-ingest-opennlp/releases/download/6.5.4.1-pos/ingest-opennlp-wpos-6.5.4.1.zip`
 
-**IMPORTANT**: If you are running this plugin with Elasticsearch 6.5.2 or newer, you need to download the NER models from sourceforge after installation.
+**IMPORTANT**: You need to download the NER and POS models from sourceforge after installation.
 
-To download the models, run the following under Linux and osx
+To download the models, run the following under Linux and OSX
 
 ```
 bin/ingest-opennlp/download-models
