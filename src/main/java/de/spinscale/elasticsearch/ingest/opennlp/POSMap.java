@@ -10,15 +10,15 @@ public class POSMap {
 
     public POSMap(){
         table = new HashMap<>();
-        table.put("C", "coordinating conjunction");
-        table.put("D", "cardinal number");
-        table.put("T", "determiner");
-        table.put("X", "existential there");
-        table.put("W", "foreign word");
-        table.put("N", "preposition or subordinating conjunction");
-        table.put("J", "adjective");
-        table.put("JR", "adjective, comparative");
-        table.put("JS", "adjective, superlative");
+        table.put("CC", "coordinating conjunction");
+        table.put("CD", "cardinal number");
+        table.put("DT", "determiner");
+        table.put("EX", "existential there");
+        table.put("FW", "foreign word");
+        table.put("IN", "preposition or subordinating conjunction");
+        table.put("JJ", "adjective");
+        table.put("JJR", "adjective, comparative");
+        table.put("JJS", "adjective, superlative");
         table.put("LS", "list item marker");
         table.put("MD", "modal");
         table.put("NN", "noun, singular or mass");
@@ -44,7 +44,7 @@ public class POSMap {
         table.put("VBZ", "verb, 3rd person singular present");
         table.put("WDT", "wh-determiner");
         table.put("WP", "wh-pronoun");
-        table.put("WPS", "possessive wh-pronoun");
+        table.put("WP$", "possessive wh-pronoun");
         table.put("WRB", "wh-adverb");
     }
 
