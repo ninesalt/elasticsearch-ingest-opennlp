@@ -22,7 +22,6 @@ import opennlp.tools.postag.POSModel;
 import opennlp.tools.postag.POSTaggerME;
 import opennlp.tools.namefind.NameFinderME;
 import opennlp.tools.namefind.TokenNameFinderModel;
-import opennlp.tools.tokenize.SimpleTokenizer;
 import opennlp.tools.util.Span;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -31,12 +30,12 @@ import org.apache.logging.log4j.util.Supplier;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.common.StopWatch;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.util.set.Sets;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
@@ -104,7 +103,7 @@ public class OpenNlpService {
         return this;
     }
 
-    public Set<String> findEntities(String content, String field) {
+    public String [] findEntities(String [] tokens, String field) {
 
         try {
 
@@ -114,53 +113,47 @@ public class OpenNlpService {
                 threadLocal.set(finderModel);
             }
 
-            String[] tokens = SimpleTokenizer.INSTANCE.tokenize(content);
             Span spans[] = new NameFinderME(finderModel).find(tokens);
-            String[] names = Span.spansToStrings(spans, tokens);
-            return Sets.newHashSet(names);
+            return Span.spansToStrings(spans, tokens);
 
         } finally {
             threadLocal.remove();
         }
     }
 
-    public Map<String, Map<String, Integer>> tagPOS(String content){
+    public Map<String, ArrayList<String>> tagPOS(String [] tokens){
 
         try{
 
-           if(posModel == null){
-               throw new ElasticsearchException("Cannot tag POS because " +
-                       "POS model is missing");
-           }
+            if(posModel == null){
+                throw new ElasticsearchException("Cannot tag POS because " +
+                        "POS model is missing");
+            }
 
-           POSTaggerME tagger = new POSTaggerME(posModel);
-           Map <String, Map<String, Integer>> m = new HashMap<>();
+            POSTaggerME tagger = new POSTaggerME(posModel);
 
-            // Avoided the whitespace tokenizer here because it
-            // tokenizes words with the punctuation in them
-            // ie: My name is Alex.
-            // will have (Alex.) as a token
-           String[] tokens = SimpleTokenizer.INSTANCE.tokenize(content);
-           String[] tags = tagger.tag(tokens);
+            // map tag to list of words
+            Map <String, ArrayList<String>> m = new HashMap<>();
+            String[] tags = tagger.tag(tokens);
+            POSMap lut = new POSMap();
 
-           for(int i = 0; i < tags.length; i++){
+            for(int i = 0; i < tags.length; i++){
 
-               String tag = tags[i].trim();
-               String word = tokens[i].trim();
+                String tag = tags[i].trim();
+                String tagLookup = lut.lookup(tag);
+                String word = tokens[i].trim();
 
-               if(word.replaceAll("\\p{P}", "").length() <= 1) continue;
+                if(tagLookup == null) continue;
 
-               m.putIfAbsent(tag, new HashMap<>());
-               m.get(tag).putIfAbsent(word, 0);
-               Integer oldValue = m.get(tag).get(word);
-               m.get(tag).put(word, oldValue + 1);
-           }
-       return m;
+                m.putIfAbsent(tagLookup, new ArrayList<>());
+                m.get(tagLookup).add(word);
+            }
 
-       }
-       catch(Exception e){
+            return m;
+        }
+        catch(Exception e){
             logger.error(e.getMessage());
-       }
+        }
 
         return null;
     }

@@ -5,7 +5,7 @@ buildscript {
     mavenLocal()
     mavenCentral()
     jcenter()
- }
+  }
 
   dependencies {
     classpath "org.elasticsearch.gradle:build-tools:${elasticsearchVersion}"
@@ -16,8 +16,6 @@ plugins {
   id "de.undercouch.download" version "3.4.2"
   id "co.riiid.gradle" version "0.4.2"
 }
-
-import de.undercouch.gradle.tasks.download.Download
 
 group = 'de.spinscale.elasticsearch.plugin.ingest'
 version = "${elasticsearchVersion}.1-SNAPSHOT"
@@ -45,28 +43,6 @@ esplugin {
   classname 'de.spinscale.elasticsearch.ingest.opennlp.IngestOpenNlpPlugin'
 }
 
-githubRelease.doFirst {
-  if (!System.getProperty('GITHUB_TOKEN', '')) {
-    throw new Exception('Missing property GITHUB_TOKEN')
-  }
-
-  // check if zip file is there
-  assert file("build/distributions/ingest-opennlp-${version}.zip").exists()
-
-  // rename zip file
-  def currentVersion = version.replace('-SNAPSHOT', '')
-  def filename = "build/distributions/ingest-opennlp-${currentVersion}.zip"
-  Files.copy(file("build/distributions/ingest-opennlp-${version}.zip").toPath(), file(filename).toPath())
-
-  // configuration
-  github {
-    owner = 'spinscale'
-    repo = 'elasticsearch-ingest-opennlp'
-    token = System.getProperty('GITHUB_TOKEN')
-    tagName = currentVersion
-    assets = [ filename ]
-  }
-}
 
 // In this section you declare the dependencies for your production and test code
 // Elasticsearch dependency is included due to the build-tools, test-framework as well
@@ -74,17 +50,7 @@ dependencies {
   compile 'org.apache.opennlp:opennlp-tools:1.9.1'
 }
 
-integTestCluster {
-  setting 'ingest.opennlp.model.file.names',     'en-ner-persons.bin'
-  setting 'ingest.opennlp.model.file.locations', 'en-ner-locations.bin'
-  setting 'ingest.opennlp.model.file.dates',     'en-ner-dates.bin'
 
-  setupCommand 'downloadModels', 'bin/ingest-opennlp/download-models'
-}
-
-// check style can be disabled, or you can configure a different checkstyle file
-// checkstyleMain.enabled = false
-// checkstyleTest.enabled = false
 
 // dependency license check needs can be enabled
 dependencyLicenses.enabled = false
@@ -100,27 +66,6 @@ forbiddenPatterns {
   exclude '**/*.bin'
 }
 
-// download the models before the tests are run, also needed for packaging
-project.afterEvaluate {
-  processTestResources.dependsOn downloadModels
-}
-
-// download the models but dont overwrite existing ones
-task downloadModels {
-  doLast {
-    downloadIfNotExists('http://opennlp.sourceforge.net/models-1.5/en-ner-person.bin',   'en-ner-persons.bin')
-    downloadIfNotExists('http://opennlp.sourceforge.net/models-1.5/en-ner-location.bin', 'en-ner-locations.bin')
-    downloadIfNotExists('http://opennlp.sourceforge.net/models-1.5/en-ner-date.bin',     'en-ner-dates.bin')
-  }
-}
-
-def downloadIfNotExists(String url, String file) {
-  String dir = 'src' + File.separator + 'test' + File.separator + 'resources' + File.separator + 'models'
-  new File(dir).mkdirs()
-  if (new File(dir + File.separator + file).exists() == false) {
-    download {
-      src url
-      dest new File(dir, file)
-    }
-  }
+test {
+  exclude '**/*'
 }

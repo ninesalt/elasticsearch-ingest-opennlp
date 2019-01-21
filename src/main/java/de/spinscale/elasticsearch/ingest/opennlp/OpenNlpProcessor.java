@@ -17,17 +17,16 @@
 
 package de.spinscale.elasticsearch.ingest.opennlp;
 
+import opennlp.tools.tokenize.SimpleTokenizer;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.ingest.AbstractProcessor;
 import org.elasticsearch.ingest.IngestDocument;
 import org.elasticsearch.ingest.Processor;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
+import java.util.Set;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static org.elasticsearch.ingest.ConfigurationUtils.readOptionalList;
 import static org.elasticsearch.ingest.ConfigurationUtils.readStringProperty;
@@ -57,35 +56,35 @@ public class OpenNlpProcessor extends AbstractProcessor {
 
         if (Strings.hasLength(content)) {
 
-            Map<String, Set<String>> entities = new HashMap<>();
-            mergeExisting(entities, ingestDocument, targetField);
+            // Avoided the whitespace tokenizer here because it
+            // tokenizes words with the punctuation in them
+            // ie: My name is Alex.
+            // will have (Alex.) as a token
+
+            // tokenizer is here to avoid recalculating it for every field
+            String [] tokens = SimpleTokenizer.INSTANCE.tokenize(content);
 
             for (String field : fields) {
 
                 // NER
                 if(!field.equals("pos")){
-                    Set<String> data = openNlpService.findEntities(content, field);
-                    merge(entities, field, data);
+                    String [] data = openNlpService.findEntities(tokens, field);
+                    ingestDocument.setFieldValue(field, data);
                 }
 
                 // POS
                 else{
-                    Map<String, Map<String, Integer>> data = openNlpService.tagPOS(content);
-                    ingestDocument.setFieldValue("pos", data);
+
+                    Map<String, ArrayList<String>> data = openNlpService.tagPOS(tokens);
+
+                    for(String k : data.keySet()){
+                        ingestDocument.setFieldValue(k, data.get(k));
+                    }
+
                 }
 
             }
 
-            // convert set to list, otherwise toXContent serialization in simulate pipeline fails
-            Map<String, List<String>> entitiesToStore = new HashMap<>();
-            Iterator<Map.Entry<String, Set<String>>> iterator = entities.entrySet().iterator();
-
-            while (iterator.hasNext()) {
-                Map.Entry<String, Set<String>> entry = iterator.next();
-                entitiesToStore.put(entry.getKey(), new ArrayList<>(entry.getValue()));
-            }
-
-            ingestDocument.setFieldValue(targetField, entitiesToStore);
         }
 
         return ingestDocument;
